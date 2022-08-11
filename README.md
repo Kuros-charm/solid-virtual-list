@@ -1,1 +1,3 @@
-init
+## Usage
+
+`npm run dev`
