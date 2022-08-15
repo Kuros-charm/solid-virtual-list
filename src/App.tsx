@@ -8,28 +8,39 @@ const App: Component = () => {
   let id = 0;
   const [getStore, setStore] = createStore((new Array(30).fill(0).map((_, i) => { return { value: i + 1, id: id++ } })))
 
-  const cellStates: {
-    [itemIdx: number]: {
-      focus: boolean,
-      selectionStart: number,
-      selectionEnd: number
-    }
-  } = {}
-
-
-  function setCellState(itemIdx: number, updateObj: any) {
-    cellStates[itemIdx] = Object.assign(cellStates[itemIdx] || {}, updateObj)
+  const uiState: {
+    focusIdx: number,
+    selectionStart: number,
+    selectionEnd: number
+  } = {
+    focusIdx: null,
+    selectionStart: null,
+    selectionEnd: null
   }
 
+
+
+
   function onFocus(itemIdx: number, setSelection) {
-    Object.keys(cellStates).forEach(k => setCellState(parseInt(k), { focus: false }));
-    setCellState(itemIdx, { focus: true });
+    if (itemIdx !== uiState.focusIdx){
+      // focus is caused by user, not by loading state
+      console.log('user focused to ',itemIdx)
+      uiState.focusIdx = itemIdx;
+      uiState.selectionStart = null;
+      uiState.selectionEnd = null;
+    }
     document.addEventListener("selectionchange", setSelection);
     onCleanup(() => document.removeEventListener("selectionchange", setSelection));
   }
 
   function onBlur(itemIdx: number, setSelection) {
-    setCellState(itemIdx, { focus: false, selectionStart: null, selectionEnd: null })
+    if (itemIdx === uiState.focusIdx){
+      // blur is caused by user, not by item moving out of window
+      console.log('user blur')
+      uiState.focusIdx = null;
+      uiState.selectionStart = null;
+      uiState.selectionEnd = null;
+    }
     document.removeEventListener("selectionchange", setSelection)
   }
 
@@ -45,25 +56,20 @@ const App: Component = () => {
           childrenTemplate={(props) => {
             let input: HTMLInputElement;
             createEffect(() => {
-              const {
-                focus,
-                selectionStart,
-                selectionEnd
-              } = cellStates[props.itemIdx] || {}
-              if (focus) {
+              if (uiState.focusIdx === props.itemIdx) {
+                console.log(`back to focused item ${props.itemIdx}, load state`)
                 input?.focus({ preventScroll: true });
+                if (uiState.selectionStart !== null && uiState.selectionEnd !== null) {
+                  input.setSelectionRange(uiState.selectionStart, uiState.selectionEnd)
+                }
               } else {
                 input?.blur();
               }
-              if (selectionStart != null && selectionEnd != null) {
-                input.setSelectionRange(selectionStart, selectionEnd)
-              }
+              
             })
             function saveSelection() {
-              setCellState(props.itemIdx, {
-                selectionStart: input.selectionStart,
-                selectionEnd: input.selectionEnd
-              })
+              uiState.selectionStart = input.selectionStart;
+              uiState.selectionEnd = input.selectionEnd;
             }
 
             return <span style={{
