@@ -22,6 +22,17 @@ function VirtualList<T>(props: {
 
   const pageArray = new Array(totalSize).fill(null);
 
+/*
+There is always N number of rendered item on screen.
+When start, there are 0 to N-1 data rendered
+When user scroll down, the item rendering 0 will change to render N, 
+item rendering 1 will change to N + 1 etc.
+
+The only state changing is the rendering item idx of each element. (itemIdx)
+
+*/
+
+
   /*
   PageStartIdx -> firstElementRenderItem, secondElementRenderItem, ...
   0 -> 0..29
