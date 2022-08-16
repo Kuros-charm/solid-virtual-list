@@ -18,10 +18,22 @@ const App: Component = () => {
     selectionEnd: null
   }
 
+  let setSelection;
+  function listenSelection(ss){
+    setSelection = ss;
+    document.addEventListener("selectionchange", setSelection);
+  }
+  function unListenSelection(){
+    document.removeEventListener("selectionchange", setSelection)
+    setSelection = null;
+  }
+
+  onCleanup(unListenSelection);
 
 
 
-  function onFocus(itemIdx: number, setSelection) {
+
+  function onFocus(itemIdx: number, ss) {
     if (itemIdx !== uiState.focusIdx){
       // focus is caused by user, not by loading state
       console.log('user focused to ',itemIdx)
@@ -29,11 +41,10 @@ const App: Component = () => {
       uiState.selectionStart = null;
       uiState.selectionEnd = null;
     }
-    document.addEventListener("selectionchange", setSelection);
-    onCleanup(() => document.removeEventListener("selectionchange", setSelection));
+    listenSelection(ss)
   }
 
-  function onBlur(itemIdx: number, setSelection) {
+  function onBlur(itemIdx: number) {
     if (itemIdx === uiState.focusIdx){
       // blur is caused by user, not by item moving out of window
       console.log('user blur')
@@ -41,7 +52,7 @@ const App: Component = () => {
       uiState.selectionStart = null;
       uiState.selectionEnd = null;
     }
-    document.removeEventListener("selectionchange", setSelection)
+   unListenSelection();
   }
 
   return (
@@ -67,10 +78,6 @@ const App: Component = () => {
               }
               
             })
-            function saveSelection() {
-              uiState.selectionStart = input.selectionStart;
-              uiState.selectionEnd = input.selectionEnd;
-            }
 
             return <span style={{
               ...props.wrapperStyle,
@@ -80,8 +87,11 @@ const App: Component = () => {
                 <input ref={input}
                   value={props.item.value}
                   onInput={(e) => setStore(item => item.id === props.item.id, "value", () => (e.target as any).value)}
-                  onFocus={() => onFocus(props.itemIdx, saveSelection)}
-                  onBlur={() => onBlur(props.itemIdx, saveSelection)}
+                  onFocus={() => onFocus(props.itemIdx, ()=> {
+                    uiState.selectionStart = input.selectionStart;
+                    uiState.selectionEnd = input.selectionEnd;
+                  })}
+                  onBlur={() => onBlur(props.itemIdx)}
                 />
               </div>
             </span>
