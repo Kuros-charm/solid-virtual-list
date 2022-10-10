@@ -1,11 +1,10 @@
-import { createMemo, createSignal, mergeProps, Index, Show, JSX } from 'solid-js';
+import { createMemo, createSignal, mergeProps, Index, Show, JSX, For } from 'solid-js';
 
-function VirtualList<T>(props: {
+function VirtualList(props: {
   height: number,
   itemHeight: number,
-  items: T[],
+  dataSize: number,
   childrenTemplate: (props: {
-    item:T,
     itemIdx: number,
     wrapperStyle: JSX.CSSProperties,
   }) => JSX.Element
@@ -20,17 +19,24 @@ function VirtualList<T>(props: {
   const totalSize = pageSize + topBufferSize * 2
 
 
-  const pageArray = new Array(totalSize).fill(null);
 
-/*
-There is always N number of rendered item on screen.
-When start, there are 0 to N-1 data rendered
-When user scroll down, the item rendering 0 will change to render N, 
-item rendering 1 will change to N + 1 etc.
+  /*
+  There is always N number of rendered item on screen.
+  When start, there are 0 to N-1 data rendered
+  When user scroll down, the item rendering 0 will change to render N, 
+  item rendering 1 will change to N + 1 etc.
 
-The only state changing is the rendering item idx of each element. (itemIdx)
+  The only state changing is the rendering item idx of each element. (itemIdx)
 
-*/
+  */
+  const viewObjs = new Array(totalSize).fill(null).map((_, elementIdx) => {
+    return {
+      itemIdx: () => calculateItemIdx(getPageStartIdx(), elementIdx)
+    }
+  });
+
+
+
 
 
   /*
@@ -63,22 +69,20 @@ The only state changing is the rendering item idx of each element. (itemIdx)
   }
 
   return <div style={{ height: `${mp.height}px`, "overflow-y": 'scroll' }} onScroll={e => handleOnScroll(e.target.scrollTop)}>
-    <div style={{ height: `${mp.itemHeight * mp.items.length}px`, position: 'relative' }}>
-      <Index each={pageArray}>
-        {(_: any, elementIdx: number) => {
+    <div style={{ height: `${mp.itemHeight * mp.dataSize}px`, position: 'relative' }}>
+      <For each={viewObjs}>
+        {(obj) => {
 
-          const itemIdx = createMemo(() => calculateItemIdx(getPageStartIdx(), elementIdx))
           return <Show
-            when={itemIdx() < mp.items.length}  // to handle remaining element if near page end, another way is to prevent page start idx to reach page end but then new element will not immediate render after added to end
+            when={obj.itemIdx() < mp.dataSize}  // to handle remaining element if near page end, another way is to prevent page start idx to reach page end but then new element will not immediate render after added to end
           >
             <mp.childrenTemplate
-              item={mp.items[itemIdx()]}
-              itemIdx={itemIdx()}
-              wrapperStyle={{ height: `${mp.itemHeight}px`, width: '100%', position: 'absolute', transform: `translate(0px, ${(itemIdx()) * mp.itemHeight}px)` }}
+              itemIdx={obj.itemIdx()}
+              wrapperStyle={{ height: `${mp.itemHeight}px`, width: '100%', position: 'absolute', transform: `translate(0px, ${(obj.itemIdx()) * mp.itemHeight}px)` }}
             />
           </Show>
         }}
-      </Index>
+      </For>
 
     </div>
 

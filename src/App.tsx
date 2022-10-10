@@ -59,10 +59,9 @@ const App: Component = () => {
     <>
       <div style={{ 'max-width': '500px' }}>
         <VirtualList
-          items={getStore}
           height={500}
           itemHeight={150}
-
+          dataSize={getStore.length}
 
           childrenTemplate={(props) => {
             let input: HTMLInputElement;
@@ -85,8 +84,8 @@ const App: Component = () => {
             }}>
               <div style={{ 'border': '1px solid', height: `148px` }}>
                 <input ref={input}
-                  value={props.item.value}
-                  onInput={(e) => setStore(item => item.id === props.item.id, "value", () => (e.target as any).value)}
+                  value={getStore[props.itemIdx].value}
+                  onInput={(e) => setStore(item => item.id === getStore[props.itemIdx].id, "value", () => (e.target as any).value)}
                   onFocus={() => onFocus(props.itemIdx, ()=> {
                     uiState.selectionStart = input.selectionStart;
                     uiState.selectionEnd = input.selectionEnd;
